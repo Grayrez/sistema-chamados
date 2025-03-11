@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Chamados Simples</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.18.12/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #46398b;
+        }
+        label, input, textarea, select, button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .chamado {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .prioridade-baixa {
+            border-left: 8px solid yellow;
+        }
+        .prioridade-média {
+            border-left: 8px solid orange;
+        }
+        .prioridade-alta {
+            border-left: 8px solid red;
+        }
+        .concluído {
+            border-left: 8px solid green;
+        }
+        button, .concluir-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #DDE524;
+            color: black;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover, .concluir-btn:hover {
+            background-color: #c3cc1d;
+        }
+        #filtroResponsavel, #exportarBtn {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Abertura de Chamados UP Fleet</h1>
+        <form id="formChamado">
+            <label for="nome">Solicitação:</label>
+            <input type="text" id="nome" required>
+
+            <label for="descricao">Breve Descrição da Solicitação:</label>
+            <textarea id="descricao" required></textarea>
+
+            <label for="prioridade">Prioridade:</label>
+            <select id="prioridade">
+                <option value="Baixa">Baixa</option>
+                <option value="Média">Média</option>
+                <option value="Alta">Alta</option>
+            </select>
+
+            <label for="responsavel">Responsável:</label>
+            <input type="text" id="responsavel" required>
+
+            <label for="dataConclusao">Data de Conclusão (prevista):</label>
+            <input type="date" id="dataConclusao" required>
+
+            <button type="submit">Abrir Chamado</button>
+        </form>
+
+        <h2>Filtrar por Responsável</h2>
+        <input type="text" id="filtroResponsavel" placeholder="Digite o nome do responsável">
+
+        <h2>Lista de Chamados</h2>
+        <div id="listaChamados"></div>
+
+        <button id="exportarBtn">Exportar para Excel</button>
+    </div>
+
+    <script>
+        document.getElementById('formChamado').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const nome = document.getElementById('nome').value;
+            const descricao = document.getElementById('descricao').value;
+            const prioridade = document.getElementById('prioridade').value;
+            const responsavel = document.getElementById('responsavel').value;
+            const dataConclusao = document.getElementById('dataConclusao').value;
+            const dataAbertura = new Date().toLocaleDateString('pt-BR');
+            
+            const chamado = document.createElement('div');
+            chamado.classList.add('chamado', `prioridade-${prioridade.toLowerCase()}`);
+            chamado.innerHTML = `<strong>Nome:</strong> ${nome}<br>
+                                 <strong>Descrição:</strong> ${descricao}<br>
+                                 <strong>Prioridade:</strong> ${prioridade}<br>
+                                 <strong>Responsável:</strong> ${responsavel}<br>
+                                 <strong>Data de Abertura:</strong> ${dataAbertura}<br>
+                                 <strong>Data de Conclusão:</strong> ${dataConclusao}<br>
+                                 <strong>Status:</strong> Aberto<br>
+                                 <button class="concluir-btn">Concluir</button>`;
+
+            chamado.dataset.nome = nome;
+            chamado.dataset.descricao = descricao;
+            chamado.dataset.prioridade = prioridade;
+            chamado.dataset.responsavel = responsavel;
+            chamado.dataset.dataAbertura = dataAbertura;
+            chamado.dataset.dataConclusao = dataConclusao;
+            chamado.dataset.status = 'Aberto';
+
+            chamado.querySelector('.concluir-btn').addEventListener('click', function() {
+                chamado.classList.remove('prioridade-baixa', 'prioridade-média', 'prioridade-alta');
+                chamado.classList.add('concluído');
+                chamado.innerHTML = chamado.innerHTML.replace('Status: Aberto', 'Status: Concluído');
+                chamado.dataset.status = 'Concluído';
+                this.remove();
+            });
+
+            document.getElementById('listaChamados').appendChild(chamado);
+            document.getElementById('formChamado').reset();
+        });
+
+        document.getElementById('exportarBtn').addEventListener('click', function() {
+            const chamados = document.querySelectorAll('.chamado');
+            const dados = [['Nome', 'Descrição', 'Prioridade', 'Responsável', 'Data de Abertura', 'Data de Conclusão', 'Status']];
+
+            chamados.forEach(chamado => {
+                dados.push([
+                    chamado.dataset.nome,
+                    chamado.dataset.descricao,
+                    chamado.dataset.prioridade,
+                    chamado.dataset.responsavel,
+                    chamado.dataset.dataAbertura,
+                    chamado.dataset.dataConclusao,
+                    chamado.dataset.status
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(dados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Chamados');
+            XLSX.writeFile(wb, 'chamados.xlsx');
+        });
+    </script>
+</body>
+</html>
